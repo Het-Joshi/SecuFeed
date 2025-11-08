@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Papers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; color: #343a40; margin: 0; }
+        .content { padding: 20px; max-width: 900px; margin: 0 auto; }
+        .paper-item { background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .search-form { background-color: #fff; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 30px; }
+    </style>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}").then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }, err => {
+            console.log('ServiceWorker registration failed: ', err);
+        });
+        });
+    }
+    </script>
+</head>
+<body>
+    <div class="content">
+        <h1>Search Papers 🔍</h1>
+        <p><a href="{{ url_for('home') }}">&larr; Back to Main Feed</a></p>
+
+        <div class="search-form">
+            <form method="post">
+                <input type="text" name="query" placeholder="Enter topic or author..." required style="width: 70%; padding: 8px;">
+                <select name="search_type" style="padding: 8px;">
+                    <option value="topic">Topic</option>
+                    <option value="author">Author</option>
+                </select>
+                <button type="submit" style="padding: 8px;">Search</button>
+            </form>
+        </div>
+
+        {% if papers is not none %}
+            {% if papers %}
+                <h2>Results for "{{ query }}"</h2>
+                {% for paper in papers %}
+                    <div class="paper-item">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h3>{{ paper.title }}</h3>
+                            </div>
+                            <form action="{{ url_for('toggle_bookmark') }}" method="post" style="min-width: 100px; text-align: right;">
+                                <input type="hidden" name="entry_id" value="{{ paper.entry_id }}">
+                                <input type="hidden" name="title" value="{{ paper.title }}">
+                                <input type="hidden" name="summary" value="{{ paper.summary }}">
+                                <input type="hidden" name="authors" value="{{ paper.authors }}">
+                                <input type="hidden" name="pdf_link" value="{{ paper.pdf_link }}">
+                                <input type="hidden" name="published_date" value="{{ paper.published_date }}">
+                                
+                                {% if paper.entry_id in bookmarked_ids %}
+                                    <button type="submit">★ Un-bookmark</button>
+                                {% else %}
+                                    <button type="submit">☆ Bookmark</button>
+                                {% endif %}
+                            </form>
+                        </div>
+                        <strong>Authors:</strong> {{ paper.authors | join(', ') }}<br>
+                        <strong>Published:</strong> {{ paper.published_date }}<br>
+                        <a href="{{ paper.pdf_link }}" target="_blank">Read PDF</a>
+                        <p>{{ paper.summary }}</p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <h2>No results found for "{{ query }}".</h2>
+            {% endif %}
+        {% endif %}
+    </div>
+</body>
+</html>

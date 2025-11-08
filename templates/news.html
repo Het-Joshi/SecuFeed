@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Security News</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; color: #343a40; margin: 0; }
+        .content { padding: 20px; max-width: 900px; margin: 0 auto; }
+        .paper-item { background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        .paper-topic { background-color: #d1ecf1; color: #0c5460; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .pagination { margin-top: 30px; text-align: center; }
+        .pagination a { margin: 0 10px; }
+    </style>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}").then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }, err => {
+            console.log('ServiceWorker registration failed: ', err);
+        });
+        });
+    }
+    </script>
+</head>
+<body>
+    <div class="content">
+        <h1>Latest Security News 📰</h1>
+        <p><a href="{{ url_for('home') }}">&larr; Back to Research Feed</a></p>
+
+        {% for article in articles %}
+            <div class="paper-item">
+                <div>
+                    <p><span class="paper-topic">{{ article.source }}</span></p>
+                    <h3><a href="{{ article.link }}" target="_blank">{{ article.title }}</a></h3>
+                </div>
+                <strong>Published:</strong> {{ article.published_date }}<br>
+                <p>{{ article.summary | striptags | truncate(300) }}</p>
+            </div>
+        {% endfor %}
+
+        <div class="pagination">
+            {% if current_page > 1 %}
+                <a href="{{ url_for('news', page=current_page-1) }}">&laquo; Previous</a>
+            {% endif %}
+
+            <span>Page {{ current_page }} of {{ total_pages }}</span>
+
+            {% if current_page < total_pages %}
+                <a href="{{ url_for('news', page=current_page+1) }}">Next &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

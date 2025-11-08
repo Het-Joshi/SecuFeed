@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SecuFeed - Your Personal Feed</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            background-color: #f8f9fa;
+            color: #343a40;
+            margin: 0;
+        }
+        .sidebar {
+            width: 300px;
+            padding: 20px;
+            border-right: 1px solid #dee2e6;
+            background-color: #ffffff;
+            height: 100vh;
+        }
+        .sidebar h2 { border-bottom: 1px solid #dee2e6; padding-bottom: 10px; }
+        .sidebar ul { padding: 0; }
+        .sidebar li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+            max-width: 900px;
+        }
+        .paper-item {
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .paper-topic {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .pagination { margin-top: 30px; text-align: center; }
+        .pagination a { margin: 0 10px; }
+    </style>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}").then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }, err => {
+            console.log('ServiceWorker registration failed: ', err);
+        });
+        });
+    }
+    </script>
+</head>
+<body>
+        <div class="sidebar">
+        <a href="{{ url_for('search') }}"><h2>Search Papers &#128269;</h2></a>
+
+        <a href="{{ url_for('bookmarks') }}"><h2>My Bookmarks &#128218;</h2></a>
+
+        <a href="{{ url_for('news') }}"><h2>Security News 📰</h2></a>
+        <h2>My Interests</h2>
+        <ul>
+            {% for interest in interests %}
+                <li>
+                    <span>
+                        {{ interest.keyword }}
+                        <small><em>({{ interest.interest_type }})</em></small>
+                    </span>
+                    <a href="{{ url_for('delete_interest', interest_id=interest.id) }}" title="Remove interest" style="color:red; text-decoration:none; font-weight:bold;">&times;</a>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <details>
+            <summary style="cursor: pointer; font-weight: bold;">Add New Interest</summary>
+            <form action="{{ url_for('add_interest') }}" method="post" style="margin-top: 10px;">
+                <input type="text" name="keyword" placeholder="Add topic or author..." required style="width: 95%; margin-bottom: 5px;">
+                <select name="interest_type" style="width: 100%; margin-bottom: 5px;">
+                    <option value="topic">Topic</option>
+                    <option value="author">Author</option>
+                </select>
+                <button type="submit" style="width: 100%;">Subscribe</button>
+            </form>
+        </details>
+    </div>
+
+    <div class="content">
+        <h1>Your Personalized Feed</h1>
+
+        {% if papers %}
+            <ul>
+                <div class="pagination">
+                    {% if current_page > 1 %}
+                        <a href="{{ url_for('home', page=current_page-1) }}">&laquo; Previous</a>
+                    {% endif %}
+
+                    <span>Page {{ current_page }} of {{ total_pages }}</span>
+
+                    {% if current_page < total_pages %}
+                        <a href="{{ url_for('home', page=current_page+1) }}">Next &raquo;</a>
+                    {% endif %}
+                </div>
+                {% for paper in papers %}
+                    <div class="paper-item">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <p><span class="paper-topic">{{ paper.topic }}</span></p>
+                                <h3>{{ paper.title }}</h3>
+                            </div>
+                            <form action="{{ url_for('toggle_bookmark') }}" method="post" style="min-width: 100px; text-align: right;">
+                                <input type="hidden" name="entry_id" value="{{ paper.entry_id }}">
+                                <input type="hidden" name="title" value="{{ paper.title }}">
+                                <input type="hidden" name="summary" value="{{ paper.summary }}">
+                                <input type="hidden" name="authors" value="{{ paper.authors | join(', ') }}">
+                                <input type="hidden" name="pdf_link" value="{{ paper.pdf_link }}">
+                                <input type="hidden" name="published_date" value="{{ paper.published_date }}">
+                                
+                                {% if paper.entry_id in bookmarked_ids %}
+                                    <button type="submit">★ Un-bookmark</button>
+                                {% else %}
+                                    <button type="submit">☆ Bookmark</button>
+                                {% endif %}
+                            </form>
+                        </div>
+                        <strong>Authors:</strong> {{ paper.authors | join(', ') }}<br>
+                        <strong>Published:</strong> {{ paper.published_date }}<br>
+                        <a href="{{ paper.pdf_link }}" target="_blank">Read PDF</a>
+                        <p>{{ paper.summary }}</p>
+                    </div>
+                {% endfor %}
+                <div class="pagination">
+                    {% if current_page > 1 %}
+                        <a href="{{ url_for('home', page=current_page-1) }}">&laquo; Previous</a>
+                    {% endif %}
+
+                    <span>Page {{ current_page }} of {{ total_pages }}</span>
+
+                    {% if current_page < total_pages %}
+                        <a href="{{ url_for('home', page=current_page+1) }}">Next &raquo;</a>
+                    {% endif %}
+                </div>
+            </ul>
+        {% else %}
+            <p>Your feed is empty. Add an interest to get started!</p>
+        {% endif %}
+    </div>
+
+</body>
+</html>
