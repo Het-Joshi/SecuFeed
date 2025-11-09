@@ -7,17 +7,22 @@ from flask import send_from_directory
 # --- Database Configuration ---
 
 # Get the absolute path of the directory where this file is located
-basedir = os.path.abspath(os.path.dirname(__file__))
+#basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 
 # Tell Flask where to find our database file
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'secufeed.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('POSTGRES_URL')
 # Suppress a deprecation warning
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize the database extension
 db = SQLAlchemy(app)
+
+# Create tables in the new database if they don't exist.
+# This runs when the app first starts.
+with app.app_context():
+    db.create_all()
 
 # Define pagination settings
 PER_PAGE = 10
@@ -271,6 +276,6 @@ def sw():
     return send_from_directory(os.path.join(app.root_path, 'static'), 'sw.js')
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()  # Creates tables if they don't exist
+    # with app.app_context():
+    #     db.create_all()  # Creates tables if they don't exist
     app.run(debug=True)

@@ -1,0 +1,6 @@
+# Database
+secufeed.db
+
+# Python
+__pycache__/
+*.pyc
