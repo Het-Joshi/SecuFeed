@@ -4,25 +4,37 @@ from flask_sqlalchemy import SQLAlchemy
 import arxiv
 import feedparser
 from flask import send_from_directory
+
+
+# Enable logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 # --- Database Configuration ---
 
 # Get the absolute path of the directory where this file is located
 #basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
+db_uri = os.environ.get('POSTGRES_URL')
+if not db_uri:
+    logger.error("POSTGRES_URL is missing!")
+    raise ValueError("POSTGRES_URL is required")
 
-# Tell Flask where to find our database file
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('POSTGRES_URL')
-# Suppress a deprecation warning
+app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,
+    'pool_recycle': 300,
+}
 # Initialize the database extension
 db = SQLAlchemy(app)
 
-# Create tables in the new database if they don't exist.
-# This runs when the app first starts.
-with app.app_context():
-    db.create_all()
+# # Create tables in the new database if they don't exist.
+# # This runs when the app first starts.
+# with app.app_context():
+#     db.create_all()
 
 # Define pagination settings
 PER_PAGE = 10
@@ -120,6 +132,14 @@ def fetch_rss_feeds():
     return all_articles
 
 # --- Route Definitions ---
+@app.route('/init-db')
+def init_db():
+    try:
+        with app.app_context():
+            db.create_all()
+        return "Database initialized successfully!", 200
+    except Exception as e:
+        return f"Error: {str(e)}", 500
 
 @app.route('/')
 @app.route('/page/<int:page>')
